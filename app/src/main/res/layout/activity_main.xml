@@ -1,67 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="20dp"
-    android:gravity="center">
+    android:layout_height="match_parent">
 
-    <ProgressBar
-        android:id="@+id/distanceMeter"
-        style="?android:attr/progressBarStyleHorizontal"
+    <FrameLayout
+        android:id="@+id/fragment_container"
         android:layout_width="match_parent"
-        android:layout_height="20dp"
-        android:layout_marginTop="10dp"
-        android:progressDrawable="@android:drawable/progress_horizontal"
-        android:progressTint="#00FF00"
-        android:max="100" />
+        android:layout_height="match_parent"
+        android:layout_above="@id/bottom_navigation" />
 
-    <TextView
-        android:id="@+id/roomStatus"
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#AA000000"
-        android:fontFamily="monospace"
-        android:padding="10dp"
-        android:text="LOC: UNKNOWN\nSTATUS: N/A"
-        android:textColor="#00FF00" />
+        android:layout_alignParentBottom="true"
+        android:background="?android:attr/windowBackground"
+        app:menu="@menu/bottom_nav_menu" />
 
-    <Button
-        android:id="@+id/scanBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Scan Now" />
-
-    <EditText
-        android:id="@+id/roomInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Enter Room Name (e.g. Lab 102)" />
-
-    <Button
-        android:id="@+id/saveBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Map Current Location" />
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="150dp"
-        android:layout_marginTop="10dp"
-        android:background="#1C1C1C"
-        android:elevation="4dp">
-
-        <TextView
-            android:id="@+id/rawDebugData"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:lineSpacingExtra="2dp"
-            android:padding="8dp"
-            android:text="System Initialized..."
-            android:textColor="#00FF00"
-            android:textSize="10sp" />
-    </ScrollView>
-
-</LinearLayout>
+</RelativeLayout>

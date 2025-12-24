@@ -1,0 +1,24 @@
+package com.example.wifiroomlocator;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class User {
+    public String uid;
+    public String name;
+    public String currentLocation;
+    public boolean shareLocation;
+    public Map<String, Boolean> friends; // Map of Friend UIDs
+
+    public User() {
+        // Default constructor required for Firebase calls
+    }
+
+    public User(String uid, String name) {
+        this.uid = uid;
+        this.name = name;
+        this.currentLocation = "Unknown Area";
+        this.shareLocation = true;
+        this.friends = new HashMap<>();
+    }
+}
