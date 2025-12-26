@@ -202,8 +202,34 @@ public class ScannerFragment extends Fragment {
         roomMap.put("00:11:22:33:44:55", "Computer Lab 1");
     }
 
+    private static final int PERMISSIONS_REQUEST_CODE = 123;
+
+    private void requestPermissions() {
+        requestPermissions(new String[]{
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_WIFI_STATE,
+                Manifest.permission.CHANGE_WIFI_STATE
+        }, PERMISSIONS_REQUEST_CODE);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSIONS_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                toggleAutoScan();
+            } else {
+                Toast.makeText(getContext(), "Permissions required for this feature", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     private boolean checkPermissions() {
-        return ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions();
+            return false;
+        }
+        return true;
     }
 
     @Override

@@ -4,6 +4,7 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.database.FirebaseDatabase;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -11,6 +12,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        FirebaseDatabase.getInstance("https://wifiroomlocator-default-rtdb.asia-southeast1.firebasedatabase.app/")
+                .setPersistenceEnabled(true);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
 
