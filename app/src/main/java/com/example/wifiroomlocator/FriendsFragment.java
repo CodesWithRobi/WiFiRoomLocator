@@ -1,64 +1,46 @@
-package com.example.wifiroomlocator;// Android Core & Fragment imports
+package com.example.wifiroomlocator;
+
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-// UI Component imports
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
 
-// Firebase imports
-import com.example.wifiroomlocator.FriendsAdapter;
-import com.example.wifiroomlocator.User;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-
-// Java Collection imports
-import java.util.ArrayList;
-import java.util.List;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.tabs.TabLayout;
 
 public class FriendsFragment extends Fragment {
-    private RecyclerView recyclerView;
-    private FriendsAdapter adapter;
-    private List<User> friendList = new ArrayList<>();
+
+    private ViewPager viewPager;
+    private TabLayout tabLayout;
+    private FloatingActionButton addFriendFab;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_friends, container, false);
-        recyclerView = view.findViewById(R.id.friendsRecyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        adapter = new FriendsAdapter(friendList);
-        recyclerView.setAdapter(adapter);
+        viewPager = view.findViewById(R.id.viewPager);
+        tabLayout = view.findViewById(R.id.tabLayout);
+        addFriendFab = view.findViewById(R.id.addFriendFab);
 
-        fetchFriends();
+        ViewPagerAdapter adapter = new ViewPagerAdapter(getChildFragmentManager());
+        adapter.addFragment(new FriendsListFragment(), "Friends");
+        adapter.addFragment(new FriendRequestsFragment(), "Requests");
+
+        viewPager.setAdapter(adapter);
+        tabLayout.setupWithViewPager(viewPager);
+
+        addFriendFab.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), FindFriendsActivity.class);
+            startActivity(intent);
+        });
+
         return view;
-    }
-
-    private void fetchFriends() {
-        FirebaseDatabase.getInstance().getReference("users")
-                .addValueEventListener(new ValueEventListener() { // Listen for real-time changes
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        friendList.clear();
-                        for (DataSnapshot ds : snapshot.getChildren()) {
-                            User user = ds.getValue(User.class);
-                            // Filter out yourself
-                            if (user != null && !user.uid.equals(FirebaseAuth.getInstance().getUid())) {
-                                friendList.add(user);
-                            }
-                        }
-                        adapter.notifyDataSetChanged();
-                    }
-                    @Override public void onCancelled(@NonNull DatabaseError error) {}
-                });
     }
 }

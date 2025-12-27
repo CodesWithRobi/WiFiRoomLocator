@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">WiFiRoomLocator</string>
+    <string name="unknown_area">Unknown Area</string>
+    <string name="scanning">Scanning..</string>
+    <string name="at_center">At Center</string>
+    <string name="near">Near</string>
+    <string name="far_away">Far Away</string>
+    <string name="new_discovery">New Discovery</string>
+    <string name="rename_s">Rename %s</string>
+    <string name="update_s">Update %s</string>
+    <string name="location_status">LOC: %1$s\nSTATUS: %2$s</string>
+    <string name="type_room_name">Type a room name!</string>
+    <string name="updated_to_s">Updated to: %s</string>
+    <string name="scan_now">Scan Now</string>
+    <string name="permissions_required">Permissions required for this feature</string>
+    <string name="computer_lab_1">Computer Lab 1</string>
+    <string name="hidden_ssid">(Hidden)</string>
 </resources>

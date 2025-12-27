@@ -116,8 +116,9 @@ public class LoginActivity extends AppCompatActivity {
 
     private void saveUserToDatabase(FirebaseUser user) {
         if (user != null) {
-            User newUser = new User(user.getUid(), user.getDisplayName());
-            FirebaseDatabase.getInstance().getReference("users").child(user.getUid()).setValue(newUser);
+            User newUser = new User(user.getUid(), user.getDisplayName(), user.getEmail());
+            FirebaseDatabase.getInstance("https://wifiroomlocator-default-rtdb.asia-southeast1.firebasedatabase.app/")
+                    .getReference("users").child(user.getUid()).setValue(newUser);
         }
     }
 
