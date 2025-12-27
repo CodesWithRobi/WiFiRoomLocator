@@ -1,59 +1,91 @@
-## Title of the Project
-Small description about the project like one below
-The integration of a chatbot within a hostel booking system, aimed at streamlining the reservation process for students and improving the overall user experience.
+# WiFi Room Locator (Social Edition)
+
+A social indoor positioning Android application built for a PEC project. It uses crowdsourced WiFi RSSI fingerprinting to identify rooms within a building and shares users' locations with their friends in real-time.
 
 ## About
-<!--Detailed Description about the project-->
-Tailored Chatbot for Hostel Booking System is a project designed to integrate a chatbot that leverages advanced natural language processing techniques to understand and respond to user queries to the hostel booking system. Traditional hostel booking processes are often time-consuming and involve manual searches and extensive communication with hostel staff. This project seeks to overcome these challenges by creating an easy-to-use chatbot interface that assists students in addressing inquiries.
+
+This project moves beyond traditional GPS, which fails indoors. It leverages the unique signal strength signatures (RSSI) of surrounding WiFi access points to create a "fingerprint" for each room. 
+
+The core innovation is its crowdsourced mapping system. When one user maps a room (e.g., "Lab 101"), that data is uploaded to a global Firebase Realtime Database. Subsequently, any other user of the app who enters that room will instantly see its correct name. The app is built around a social graph, allowing users to add friends and see their current indoor location update in real-time, creating a dynamic social map of the building.
 
 ## Features
-<!--List the features of the project as shown below-->
-- Implements advance neural network method.
-- A framework based application for deployment purpose.
-- High scalability.
-- Less time complexity.
-- A specific scope of Chatbot response model, using json data format.
+
+- **One-Tap Google Sign-In:** Secure and easy authentication using the latest Android Credential Manager API.
+- **Non-Destructive User Creation:** User profiles are created in Firebase only on their first login, preserving their friend list and other data on subsequent sessions.
+- **Crowdsourced Room Mapping:** New rooms are fingerprinted and added to a global Firebase database. The system is robust against race conditions, preventing existing user-defined names from being overwritten by the auto-discovery mechanism.
+- **Real-Time Location Detection:** The app continuously scans WiFi signals to identify the user's current room based on the global fingerprint database.
+- **Real-Time Location Sharing:** A user's current detected location is instantly updated in Firebase, allowing friends to see where they are in real-time.
+- **Proximity Awareness:** Displays the user's proximity ("At Center", "Near", "Far Away") to the center of a mapped room based on RSSI signal offset.
+- **Complete & Robust Friend System:**
+    - Find other users in a dedicated 'Find Friends' screen.
+    - Send, Accept, and Decline friend requests.
+    - Remove friends via a long-press confirmation dialog.
+    - All social operations (accepting, deleting) use **atomic multi-path Firebase updates** to ensure data consistency and prevent partial states.
+- **Offline Persistence:** Firebase offline capabilities ensure the app remains functional even during temporary network disruptions.
+- **Targeted Scanning:** Includes a hardcoded filter to only recognize and map networks with a specific name (e.g., "sec"), perfect for a controlled demo environment.
 
 ## Requirements
-<!--List the requirements of the project as shown below-->
-* Operating System: Requires a 64-bit OS (Windows 10 or Ubuntu) for compatibility with deep learning frameworks.
-* Development Environment: Python 3.6 or later is necessary for coding the sign language detection system.
-* Deep Learning Frameworks: TensorFlow for model training, MediaPipe for hand gesture recognition.
-* Image Processing Libraries: OpenCV is essential for efficient image processing and real-time hand gesture recognition.
-* Version Control: Implementation of Git for collaborative development and effective code management.
-* IDE: Use of VSCode as the Integrated Development Environment for coding, debugging, and version control integration.
-* Additional Dependencies: Includes scikit-learn, TensorFlow (versions 2.4.1), TensorFlow GPU, OpenCV, and Mediapipe for deep learning tasks.
+
+*   Android Studio & Java
+*   Firebase Realtime Database (asia-southeast1)
+*   Firebase Authentication
+*   Android Credential Manager API with Google Sign-In
+*   Android SDK (especially `WifiManager`)
+*   AndroidX Libraries (`AppCompat`, `RecyclerView`, `ViewPager`, `CoordinatorLayout`)
+*   Google Material Components
 
 ## System Architecture
-<!--Embed the system architecture diagram as shown below-->
 
-![Screenshot 2023-11-25 133637](https://github.com/<<yourusername>>/Hand-Gesture-Recognition-System/assets/75235455/a60c11f3-0a11-47fb-ac89-755d5f45c995)
+The application relies on a client-server architecture with the Android app as the client and Firebase as the backend.
 
+### Firebase Realtime Database Schema
+
+```json
+{
+  "mappings": {
+    // Contains WiFi fingerprints (BSSID -> Room Name, RSSI, Creator)
+    "BSSID_WITHOUT_COLONS": {
+      "name": "Library",
+      "rssi": -55,
+      "creator": "UID_123"
+    }
+  },
+  "users": {
+    // Stores user profile information
+    "UID_123": {
+      "name": "John Doe",
+      "email": "john@pec.edu",
+      "currentLocation": "Library",
+      "friends": {
+        "UID_456": true
+      }
+    }
+  },
+  "friendRequests": {
+    // Manages pending friend requests
+    "TARGET_UID": {
+      "SENDER_UID": "pending"
+    }
+  }
+}
+```
 
 ## Output
 
-<!--Embed the Output picture at respective places as shown below as shown below-->
-#### Output1 - Name of the output
+<!--You can replace these with your own screenshots-->
 
-![Screenshot 2023-11-25 134037](https://github.com/<<yourusername>>/Hand-Gesture-Recognition-System/assets/75235455/8c2b6b5c-5ed2-4ec4-b18e-5b6625402c16)
+#### Output 1 - Real-Time Scanning and Location Detection
 
-#### Output2 - Name of the output
-![Screenshot 2023-11-25 134253](https://github.com/<<yourusername>>/Hand-Gesture-Recognition-System/assets/75235455/5e05c981-05ca-4aaa-aea2-d918dcf25cb7)
+![Scanner Screen](https://via.placeholder.com/300x600.png?text=Scanner+Screen)
 
-Detection Accuracy: 96.7%
-Note: These metrics can be customized based on your actual performance evaluations.
+#### Output 2 - Live Friends List with Locations
 
+![Friends List](https://via.placeholder.com/300x600.png?text=Friends+List)
+
+#### Output 3 - Finding and Adding New Friends
+
+![Find Friends Screen](https://via.placeholder.com/300x600.png?text=Find+Friends)
 
 ## Results and Impact
-<!--Give the results and impact as shown below-->
-The Sign Language Detection System enhances accessibility for individuals with hearing and speech impairments, providing a valuable tool for inclusive communication. The project's integration of computer vision and deep learning showcases its potential for intuitive and interactive human-computer interaction.
 
-This project serves as a foundation for future developments in assistive technologies and contributes to creating a more inclusive and accessible digital environment.
-
-## Articles published / References
-1. N. S. Gupta, S. K. Rout, S. Barik, R. R. Kalangi, and B. Swampa, “Enhancing Heart Disease Prediction Accuracy Through Hybrid Machine Learning Methods ”, EAI Endorsed Trans IoT, vol. 10, Mar. 2024.
-2. A. A. BIN ZAINUDDIN, “Enhancing IoT Security: A Synergy of Machine Learning, Artificial Intelligence, and Blockchain”, Data Science Insights, vol. 2, no. 1, Feb. 2024.
-
-
-
-
+The WiFi Room Locator (Social Edition) successfully demonstrates a practical and scalable solution for indoor positioning where GPS is unavailable. By crowdsourcing the fingerprinting process, the system becomes more accurate and useful as more people use it. The real-time social features create an engaging experience, perfect for a campus or office environment. This project serves as a strong foundation for future development in indoor navigation, location-based services, and social networking.

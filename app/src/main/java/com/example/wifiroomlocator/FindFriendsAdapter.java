@@ -38,18 +38,23 @@ public class FindFriendsAdapter extends RecyclerView.Adapter<FindFriendsAdapter.
         holder.email.setText(user.email);
 
         holder.addFriendButton.setOnClickListener(v -> {
-            sendFriendRequest(user.uid);
-            Toast.makeText(v.getContext(), "Friend request sent!", Toast.LENGTH_SHORT).show();
-            holder.addFriendButton.setEnabled(false);
+            sendFriendRequest(user.uid, holder);
         });
     }
 
-    private void sendFriendRequest(String targetUid) {
+    private void sendFriendRequest(String targetUid, ViewHolder holder) {
         String myUid = FirebaseAuth.getInstance().getUid();
         if (myUid == null) return;
 
         FirebaseDatabase.getInstance(dbUrl).getReference("friendRequests")
-                .child(targetUid).child(myUid).setValue("pending");
+                .child(targetUid).child(myUid).setValue("pending").addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Toast.makeText(holder.itemView.getContext(), "Friend request sent!", Toast.LENGTH_SHORT).show();
+                        holder.addFriendButton.setEnabled(false);
+                    } else {
+                        Toast.makeText(holder.itemView.getContext(), "Failed to send request.", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     @Override

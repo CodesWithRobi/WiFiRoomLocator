@@ -40,14 +40,14 @@ public class FriendRequestsAdapter extends RecyclerView.Adapter<FriendRequestsAd
         holder.email.setText(requester.email);
 
         holder.acceptButton.setOnClickListener(v -> {
-            acceptRequest(requester, position, holder);
+            acceptRequest(requester, holder);
         });
         holder.declineButton.setOnClickListener(v -> {
-            declineRequest(requester, position, holder);
+            declineRequest(requester, holder);
         });
     }
 
-    private void acceptRequest(User requester, int position, ViewHolder holder) {
+    private void acceptRequest(User requester, ViewHolder holder) {
         String myUid = FirebaseAuth.getInstance().getUid();
         if (myUid == null) return;
 
@@ -63,9 +63,7 @@ public class FriendRequestsAdapter extends RecyclerView.Adapter<FriendRequestsAd
 
         FirebaseDatabase.getInstance(dbUrl).getReference().updateChildren(childUpdates).addOnCompleteListener(task -> {
             if(task.isSuccessful()) {
-                requesters.remove(position);
-                notifyItemRemoved(position);
-                notifyItemRangeChanged(position, requesters.size());
+                // The Fragment's listener will automatically update the UI.
                 Toast.makeText(holder.itemView.getContext(), "Friend request accepted!", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(holder.itemView.getContext(), "Failed to accept request.", Toast.LENGTH_SHORT).show();
@@ -73,16 +71,19 @@ public class FriendRequestsAdapter extends RecyclerView.Adapter<FriendRequestsAd
         });
     }
 
-    private void declineRequest(User requester, int position, ViewHolder holder) {
+    private void declineRequest(User requester, ViewHolder holder) {
         String myUid = FirebaseAuth.getInstance().getUid();
         if (myUid == null) return;
-        FirebaseDatabase.getInstance(dbUrl).getReference("friendRequests").child(myUid).child(requester.uid).removeValue();
 
-        // Update UI
-        requesters.remove(position);
-        notifyItemRemoved(position);
-        notifyItemRangeChanged(position, requesters.size());
-        Toast.makeText(holder.itemView.getContext(), "Friend request declined", Toast.LENGTH_SHORT).show();
+        FirebaseDatabase.getInstance(dbUrl).getReference("friendRequests").child(myUid).child(requester.uid).removeValue()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        // The Fragment's listener will automatically update the UI.
+                        Toast.makeText(holder.itemView.getContext(), "Friend request declined", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(holder.itemView.getContext(), "Failed to decline request.", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     @Override

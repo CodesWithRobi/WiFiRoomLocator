@@ -25,7 +25,11 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -35,6 +39,7 @@ public class LoginActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
     private FirebaseAuth mAuth;
     private CredentialManager credentialManager;
+    private final String dbUrl = "https://wifiroomlocator-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,11 +120,25 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void saveUserToDatabase(FirebaseUser user) {
-        if (user != null) {
-            User newUser = new User(user.getUid(), user.getDisplayName(), user.getEmail());
-            FirebaseDatabase.getInstance("https://wifiroomlocator-default-rtdb.asia-southeast1.firebasedatabase.app/")
-                    .getReference("users").child(user.getUid()).setValue(newUser);
-        }
+        if (user == null) return;
+
+        DatabaseReference userRef = FirebaseDatabase.getInstance(dbUrl).getReference("users").child(user.getUid());
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!snapshot.exists()) {
+                    // If the user does not exist, create them.
+                    User newUser = new User(user.getUid(), user.getDisplayName(), user.getEmail());
+                    userRef.setValue(newUser);
+                }
+                // If user exists, do nothing. This is the critical fix.
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Failed to check for user existence: " + error.getMessage());
+            }
+        });
     }
 
     private void updateUI(FirebaseUser user) {

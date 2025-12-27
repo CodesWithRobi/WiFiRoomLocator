@@ -1,7 +1,7 @@
-
 package com.example.wifiroomlocator;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +23,7 @@ import java.util.List;
 
 public class FriendRequestsFragment extends Fragment {
 
+    private static final String TAG = "FriendRequestsFragment";
     private RecyclerView recyclerView;
     private FriendRequestsAdapter adapter;
     private List<User> requesters = new ArrayList<>();
@@ -50,15 +51,16 @@ public class FriendRequestsFragment extends Fragment {
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         requesters.clear();
                         for (DataSnapshot ds : snapshot.getChildren()) {
-                            // The key is the UID of the user who sent the request
                             String senderUid = ds.getKey();
-                            // Now, fetch the user's data
-                            fetchUserData(senderUid);
+                            if (senderUid != null) {
+                                fetchUserData(senderUid);
+                            }
                         }
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Failed to fetch friend requests: " + error.getMessage());
                     }
                 });
     }
@@ -72,11 +74,19 @@ public class FriendRequestsFragment extends Fragment {
                         if (user != null) {
                             requesters.add(user);
                             adapter.notifyDataSetChanged();
+                        } else {
+                            // This can happen if the user who sent the request has deleted their account.
+                            // We should remove the orphaned request.
+                            String myUid = FirebaseAuth.getInstance().getUid();
+                            if (myUid != null) {
+                                FirebaseDatabase.getInstance(dbUrl).getReference("friendRequests").child(myUid).child(uid).removeValue();
+                            }
                         }
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Failed to fetch user data for friend request: " + error.getMessage());
                     }
                 });
     }

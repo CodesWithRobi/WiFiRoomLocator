@@ -8,6 +8,7 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,11 +31,13 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 public class ScannerFragment extends Fragment {
 
+    private static final String TAG = "ScannerFragment";
     private TextView roomStatus, rawDebugData;
     private EditText roomInput;
     private Button scanBtn, saveBtn, logoutBtn;
@@ -45,12 +48,16 @@ public class ScannerFragment extends Fragment {
 
     private final Handler handler = new Handler();
     private boolean isAutoScanning = false;
+    private boolean firebaseDataLoaded = false;
 
     private final ActivityResultLauncher<String[]> requestPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestMultiplePermissions(),
             permissions -> {
                 if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false)) {
-                    toggleAutoScan();
+                    // If permissions are granted, attempt to start scanning, but only if data is loaded
+                    if(firebaseDataLoaded && !isAutoScanning) {
+                        toggleAutoScan();
+                    }
                 } else {
                     Toast.makeText(getContext(), R.string.permissions_required, Toast.LENGTH_SHORT).show();
                 }
@@ -78,14 +85,12 @@ public class ScannerFragment extends Fragment {
             Intent intent = new Intent(getActivity(), LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
-            getActivity().finish();
+            if (getActivity() != null) {
+                getActivity().finish();
+            }
         });
 
         initializeRoomData();
-
-        if (checkPermissions()) {
-            toggleAutoScan();
-        }
 
         return view;
     }
@@ -107,6 +112,12 @@ public class ScannerFragment extends Fragment {
 
         for (ScanResult network : results) {
             String ssid = network.SSID.isEmpty() ? getString(R.string.hidden_ssid) : network.SSID;
+
+            // Filter for SSIDs containing "sec" case-insensitively
+            if (!ssid.toLowerCase().contains("sec")) {
+                continue;
+            }
+
             sb.append(ssid).append(" | ").append(network.level).append("dBm\n");
 
             Mapping mapping = mappings.get(network.BSSID.replace(":", ""));
@@ -129,8 +140,8 @@ public class ScannerFragment extends Fragment {
 
         if (detectedRoom.equals(getString(R.string.unknown_area)) && strongestUnknown != null) {
             String bssidKey = strongestUnknown.BSSID.replace(":", "");
-            if (!mappings.containsKey(bssidKey)) {
-                String tempName = "Area " + strongestUnknown.BSSID.substring(12);
+            if (firebaseDataLoaded && !mappings.containsKey(bssidKey)) {
+                String tempName = "RM " + strongestUnknown.BSSID.substring(12);
                 autoFingerprint(strongestUnknown.BSSID, tempName, strongestUnknown.level);
                 detectedRoom = tempName;
                 proximityStatus = getString(R.string.new_discovery);
@@ -176,10 +187,30 @@ public class ScannerFragment extends Fragment {
             return;
         }
         List<ScanResult> results = wifiManager.getScanResults();
-        if (results.isEmpty()) return;
+        if (results.isEmpty()) {
+            Toast.makeText(getContext(), "No WiFi networks found.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        ScanResult strongest = results.get(0);
-        for (ScanResult r : results) if (r.level > strongest.level) strongest = r;
+        // Filter for "sec" networks
+        List<ScanResult> secNetworks = new ArrayList<>();
+        for (ScanResult network : results) {
+            if (network.SSID != null && !network.SSID.isEmpty() && network.SSID.toLowerCase().contains("sec")) {
+                secNetworks.add(network);
+            }
+        }
+
+        if (secNetworks.isEmpty()) {
+            Toast.makeText(getContext(), "No 'sec' network in range to map.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ScanResult strongest = secNetworks.get(0);
+        for (ScanResult r : secNetworks) {
+            if (r.level > strongest.level) {
+                strongest = r;
+            }
+        }
 
         autoFingerprint(strongest.BSSID, nameText, strongest.level);
         Toast.makeText(getContext(), getString(R.string.updated_to_s, nameText), Toast.LENGTH_SHORT).show();
@@ -218,10 +249,19 @@ public class ScannerFragment extends Fragment {
                         mappings.put(ds.getKey(), mapping);
                     }
                 }
+                // CRITICAL FIX: Only trigger the first scan AFTER the initial data is loaded.
+                if (!firebaseDataLoaded) {
+                    firebaseDataLoaded = true;
+                    if (checkPermissions() && !isAutoScanning) {
+                        toggleAutoScan();
+                    }
+                }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Failed to load mappings: " + error.getMessage());
+            }
         });
     }
 

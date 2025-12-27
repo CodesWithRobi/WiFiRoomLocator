@@ -1,6 +1,8 @@
 package com.example.wifiroomlocator;
 
 import android.os.Bundle;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,10 +17,10 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class FindFriendsActivity extends AppCompatActivity {
 
+    private static final String TAG = "FindFriendsActivity";
     private RecyclerView recyclerView;
     private FindFriendsAdapter adapter;
     private List<User> userList = new ArrayList<>();
@@ -42,7 +44,6 @@ public class FindFriendsActivity extends AppCompatActivity {
         String myUid = FirebaseAuth.getInstance().getUid();
         if (myUid == null) return;
 
-        // First, get the list of current friends
         FirebaseDatabase.getInstance(dbUrl).getReference("users").child(myUid).child("friends")
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
@@ -51,12 +52,12 @@ public class FindFriendsActivity extends AppCompatActivity {
                         for (DataSnapshot ds : snapshot.getChildren()) {
                             friendUids.add(ds.getKey());
                         }
-                        // Now fetch all users and filter
                         fetchAllUsers(myUid);
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Failed to fetch friend UIDs: " + error.getMessage());
                         fetchAllUsers(myUid); // Fetch users anyway
                     }
                 });
@@ -79,6 +80,7 @@ public class FindFriendsActivity extends AppCompatActivity {
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Failed to fetch all users: " + error.getMessage());
                     }
                 });
     }
