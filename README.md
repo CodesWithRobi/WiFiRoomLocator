@@ -1,4 +1,4 @@
-# WiFi Room Locator (Social Edition)
+# WiFi Room Locator
 
 A social indoor positioning Android application built for a PEC project. It uses crowdsourced WiFi RSSI fingerprinting to identify rooms within a building and shares users' locations with their friends in real-time.
 
@@ -72,19 +72,18 @@ The application relies on a client-server architecture with the Android app as t
 
 ## Output
 
-<!--You can replace these with your own screenshots-->
-
 #### Output 1 - Real-Time Scanning and Location Detection
 
-![Scanner Screen](https://via.placeholder.com/300x600.png?text=Scanner+Screen)
+![Home](https://github.com/user-attachments/assets/ae8f5e6f-3f55-4ede-9fed-48ced618dcc1)
+
 
 #### Output 2 - Live Friends List with Locations
 
-![Friends List](https://via.placeholder.com/300x600.png?text=Friends+List)
+<img width="510" height="316" alt="image" src="https://github.com/user-attachments/assets/f85ef7a9-deea-4d0e-b321-f34b79331bd8" />
 
 #### Output 3 - Finding and Adding New Friends
 
-![Find Friends Screen](https://via.placeholder.com/300x600.png?text=Find+Friends)
+<img width="410" height="350" alt="image" src="https://github.com/user-attachments/assets/88621d1e-163b-4b1e-b20b-9d0c9b9931e6" />
 
 ## Results and Impact
 
