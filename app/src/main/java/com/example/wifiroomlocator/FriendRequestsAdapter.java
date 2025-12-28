@@ -1,9 +1,10 @@
 package com.example.wifiroomlocator;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,9 +53,9 @@ public class FriendRequestsAdapter extends RecyclerView.Adapter<FriendRequestsAd
         if (myUid == null) return;
 
         // Create paths for the atomic update
-        String userAFriendPath = "/users/" + requester.uid + "/friends/" + myUid;
-        String userBFriendPath = "/users/" + myUid + "/friends/" + requester.uid;
-        String requestPath = "/friendRequests/" + myUid + "/" + requester.uid;
+        String userAFriendPath = "users/" + requester.uid + "/friends/" + myUid;
+        String userBFriendPath = "users/" + myUid + "/friends/" + requester.uid;
+        String requestPath = "friend_requests/" + myUid + "/" + requester.uid;
 
         Map<String, Object> childUpdates = new HashMap<>();
         childUpdates.put(userAFriendPath, true);
@@ -66,7 +67,10 @@ public class FriendRequestsAdapter extends RecyclerView.Adapter<FriendRequestsAd
                 // The Fragment's listener will automatically update the UI.
                 Toast.makeText(holder.itemView.getContext(), "Friend request accepted!", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(holder.itemView.getContext(), "Failed to accept request.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(holder.itemView.getContext(), "Failed to accept request. Check logs for details.", Toast.LENGTH_LONG).show();
+                if (task.getException() != null) {
+                    Log.e("FriendRequestsAdapter", "Failed to accept request", task.getException());
+                }
             }
         });
     }
@@ -75,13 +79,16 @@ public class FriendRequestsAdapter extends RecyclerView.Adapter<FriendRequestsAd
         String myUid = FirebaseAuth.getInstance().getUid();
         if (myUid == null) return;
 
-        FirebaseDatabase.getInstance(dbUrl).getReference("friendRequests").child(myUid).child(requester.uid).removeValue()
+        FirebaseDatabase.getInstance(dbUrl).getReference("friend_requests").child(myUid).child(requester.uid).removeValue()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         // The Fragment's listener will automatically update the UI.
                         Toast.makeText(holder.itemView.getContext(), "Friend request declined", Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(holder.itemView.getContext(), "Failed to decline request.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(holder.itemView.getContext(), "Failed to decline request. Check logs for details.", Toast.LENGTH_LONG).show();
+                        if (task.getException() != null) {
+                            Log.e("FriendRequestsAdapter", "Failed to decline request", task.getException());
+                        }
                     }
                 });
     }
@@ -93,7 +100,7 @@ public class FriendRequestsAdapter extends RecyclerView.Adapter<FriendRequestsAd
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView name, email;
-        Button acceptButton, declineButton;
+        ImageButton acceptButton, declineButton;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);

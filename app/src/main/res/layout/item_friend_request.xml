@@ -1,40 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="16dp">
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp">
 
-    <LinearLayout
-        android:layout_width="0dp"
+    <RelativeLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:padding="16dp">
+
+        <LinearLayout
+            android:id="@+id/buttonLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/acceptButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Accept Friend Request"
+                android:src="@drawable/ic_check"
+                app:tint="@color/blue" />
+
+            <ImageButton
+                android:id="@+id/declineButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Decline Friend Request"
+                android:src="@drawable/ic_close"
+                app:tint="@color/dark_grey" />
+
+        </LinearLayout>
 
         <TextView
             android:id="@+id/requesterName"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="User Name" />
+            android:layout_alignParentStart="true"
+            android:layout_toStartOf="@id/buttonLayout"
+            android:layout_marginEnd="16dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/poppins"
+            android:maxLines="1"
+            android:text="User Name"
+            android:textColor="@color/dark_grey"
+            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/requesterEmail"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="user@example.com" />
+            android:layout_below="@id/requesterName"
+            android:layout_alignParentStart="true"
+            android:layout_toStartOf="@id/buttonLayout"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/poppins"
+            android:maxLines="1"
+            android:text="user@example.com"
+            android:textColor="@color/dark_grey" />
 
-    </LinearLayout>
+    </RelativeLayout>
 
-    <Button
-        android:id="@+id/acceptButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Accept" />
-
-    <Button
-        android:id="@+id/declineButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Decline" />
-
-</LinearLayout>
+</androidx.cardview.widget.CardView>

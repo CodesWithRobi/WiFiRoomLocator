@@ -1,25 +1,56 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="20dp"
-    android:background="#121212">
+    android:background="@drawable/modern_background"
+    tools:context=".LoginActivity">
+
+    <ImageView
+        android:id="@+id/blob1"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:src="@drawable/blob_1"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="-100dp"
+        android:layout_marginTop="-100dp"/>
+
+    <ImageView
+        android:id="@+id/blob2"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:src="@drawable/blob_2"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="-100dp"
+        android:layout_marginBottom="-100dp"/>
 
     <TextView
+        android:id="@+id/appNameTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:fontFamily="@font/poppins"
         android:text="WIFI ROOM LOCATOR"
-        android:textColor="#00FF00"
-        android:textSize="28sp"
-        android:fontFamily="monospace"
-        android:layout_marginBottom="50dp"
-        android:gravity="center"/>
+        android:textColor="@color/dark_grey"
+        android:textSize="34sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/googleSignInBtn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.3" />
 
     <com.google.android.gms.common.SignInButton
         android:id="@+id/googleSignInBtn"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="20dp" />
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

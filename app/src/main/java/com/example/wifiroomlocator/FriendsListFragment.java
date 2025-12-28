@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,6 +25,7 @@ public class FriendsListFragment extends Fragment {
     private RecyclerView recyclerView;
     private FriendsAdapter adapter;
     private List<User> friendList = new ArrayList<>();
+    private LinearLayout emptyView;
     private final String dbUrl = "https://wifiroomlocator-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
     @Nullable
@@ -31,6 +33,7 @@ public class FriendsListFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_friends_list, container, false);
         recyclerView = view.findViewById(R.id.friendsRecyclerView);
+        emptyView = view.findViewById(R.id.emptyView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         adapter = new FriendsAdapter(friendList);
@@ -49,11 +52,15 @@ public class FriendsListFragment extends Fragment {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         friendList.clear();
-                        for (DataSnapshot ds : snapshot.getChildren()) {
-                            String friendUid = ds.getKey();
-                            if (friendUid != null) {
-                                fetchUserData(friendUid);
+                        if (snapshot.exists()) {
+                            for (DataSnapshot ds : snapshot.getChildren()) {
+                                String friendUid = ds.getKey();
+                                if (friendUid != null) {
+                                    fetchUserData(friendUid);
+                                }
                             }
+                        } else {
+                            updateEmptyView();
                         }
                     }
 
@@ -84,6 +91,7 @@ public class FriendsListFragment extends Fragment {
                                 friendList.add(user);
                             }
                             adapter.notifyDataSetChanged();
+                            updateEmptyView();
                         }
                     }
 
@@ -91,5 +99,15 @@ public class FriendsListFragment extends Fragment {
                     public void onCancelled(@NonNull DatabaseError error) {
                     }
                 });
+    }
+
+    private void updateEmptyView() {
+        if (friendList.isEmpty()) {
+            recyclerView.setVisibility(View.GONE);
+            emptyView.setVisibility(View.VISIBLE);
+        } else {
+            recyclerView.setVisibility(View.VISIBLE);
+            emptyView.setVisibility(View.GONE);
+        }
     }
 }

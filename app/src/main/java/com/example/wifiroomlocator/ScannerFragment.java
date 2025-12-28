@@ -242,6 +242,9 @@ public class ScannerFragment extends Fragment {
         FirebaseDatabase.getInstance(dbUrl).getReference("mappings").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!isAdded()) {
+                    return; // Fragment not attached to a context, so do nothing
+                }
                 mappings.clear();
                 for (DataSnapshot ds : snapshot.getChildren()) {
                     Mapping mapping = ds.getValue(Mapping.class);

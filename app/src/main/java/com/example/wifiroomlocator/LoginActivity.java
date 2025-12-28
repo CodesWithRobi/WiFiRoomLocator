@@ -4,6 +4,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.util.Log;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -53,6 +56,14 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_login);
+
+        // Blob animations
+        ImageView blob1 = findViewById(R.id.blob1);
+        ImageView blob2 = findViewById(R.id.blob2);
+        Animation driftUp = AnimationUtils.loadAnimation(this, R.anim.drift_up);
+        Animation driftDown = AnimationUtils.loadAnimation(this, R.anim.drift_down);
+        blob1.startAnimation(driftUp);
+        blob2.startAnimation(driftDown);
 
         SignInButton signInButton = findViewById(R.id.googleSignInBtn);
         signInButton.setOnClickListener(v -> startCredentialManagerSignIn());

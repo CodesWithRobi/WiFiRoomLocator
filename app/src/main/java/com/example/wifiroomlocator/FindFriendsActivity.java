@@ -71,7 +71,7 @@ public class FindFriendsActivity extends AppCompatActivity {
                         userList.clear();
                         for (DataSnapshot ds : snapshot.getChildren()) {
                             User user = ds.getValue(User.class);
-                            if (user != null && !user.uid.equals(myUid) && !friendUids.contains(user.uid)) {
+                            if (user != null && user.uid != null && !user.uid.equals(myUid) && !friendUids.contains(user.uid)) {
                                 userList.add(user);
                             }
                         }

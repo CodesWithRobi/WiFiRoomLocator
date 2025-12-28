@@ -1,75 +1,152 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="20dp"
-    android:gravity="center">
+    android:background="@drawable/modern_background">
 
-    <ProgressBar
-        android:id="@+id/distanceMeter"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="20dp"
-        android:layout_marginTop="10dp"
-        android:progressDrawable="@android:drawable/progress_horizontal"
-        android:progressTint="#00FF00"
-        android:max="100" />
-
-    <TextView
-        android:id="@+id/roomStatus"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/statusCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#AA000000"
-        android:fontFamily="monospace"
-        android:padding="10dp"
-        android:text="LOC: UNKNOWN\nSTATUS: N/A"
-        android:textColor="#00FF00" />
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="44dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/roomStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="@font/poppins"
+                android:gravity="center"
+                android:text="LOC: UNKNOWN | STATUS: N/A"
+                android:textColor="@color/dark_grey"
+                android:textSize="18sp" />
+
+            <ProgressBar
+                android:id="@+id/distanceMeter"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="12dp"
+                android:layout_below="@id/roomStatus"
+                android:max="100"
+                android:progressDrawable="@drawable/custom_progress_bar" />
+
+        </RelativeLayout>
+
+    </androidx.cardview.widget.CardView>
 
     <Button
         android:id="@+id/scanBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Scan Now" />
+        android:layout_below="@+id/statusCard"
+        android:layout_centerHorizontal="true"
+        android:backgroundTint="@color/blue"
+        android:fontFamily="@font/poppins"
+        android:text="Scan Now"
+        android:textColor="@color/white" />
 
-    <EditText
-        android:id="@+id/roomInput"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/logoutCard"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Enter Room Name (e.g. Lab 102)" />
+        android:layout_height="40dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="#E9081D"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp">
 
-    <Button
-        android:id="@+id/saveBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Map Current Location" />
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="229dp"
-        android:layout_marginTop="10dp"
-        android:background="#1C1C1C"
-        android:elevation="4dp">
-
-        <TextView
-            android:id="@+id/rawDebugData"
+        <Button
+            android:id="@+id/logoutBtn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:lineSpacingExtra="2dp"
-            android:padding="8dp"
-            android:text="System Initialized..."
-            android:textColor="#00FF00"
-            android:textSize="10sp" />
-    </ScrollView>
+            android:background="@android:color/transparent"
+            android:fontFamily="@font/poppins"
+            android:text="Log Out"
+            android:textColor="@color/white" />
 
-    <Button
-        android:id="@+id/logoutBtn"
-        android:layout_width="wrap_content"
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/debugCard"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_above="@+id/logoutCard"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp">
+
+        <ScrollView
+            android:id="@+id/rawDebugDataScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/rawDebugData"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:padding="8dp"
+                android:text="System Initialized..."
+                android:textColor="@color/dark_grey"
+                android:textSize="12sp" />
+        </ScrollView>
+
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/mappingCard"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:backgroundTint="#AA0000"
-        android:text="Log Out" />
+        android:layout_above="@+id/debugCard"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp">
 
-</LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <EditText
+                android:id="@+id/roomInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins"
+                android:hint="Enter Room Name (e.g. Lab 102)"
+                android:inputType="text"
+                android:maxLines="1" />
+
+            <Button
+                android:id="@+id/saveBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="@color/dark_grey"
+                android:fontFamily="@font/poppins"
+                android:text="Map Current Location"
+                android:textColor="@color/white" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</RelativeLayout>
