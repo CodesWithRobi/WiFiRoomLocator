@@ -1,13 +1,17 @@
 package com.example.wifiroomlocator;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,6 +29,8 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -34,16 +40,19 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.PatternSyntaxException;
 
 public class ScannerFragment extends Fragment {
 
     private static final String TAG = "ScannerFragment";
     private TextView roomStatus, rawDebugData;
-    private EditText roomInput;
-    private Button scanBtn, saveBtn, logoutBtn;
+    private EditText roomInput, filterInput;
+    private Button scanBtn, saveBtn, logoutBtn, addFilterBtn;
     private ProgressBar distanceMeter;
     private WifiManager wifiManager;
+    private ChipGroup filterChipGroup;
     private final HashMap<String, Mapping> mappings = new HashMap<>();
+    private final ArrayList<String> filters = new ArrayList<>();
     private final String dbUrl = "https://wifiroomlocator-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
     private final Handler handler = new Handler();
@@ -54,9 +63,8 @@ public class ScannerFragment extends Fragment {
             new ActivityResultContracts.RequestMultiplePermissions(),
             permissions -> {
                 if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false)) {
-                    // If permissions are granted, attempt to start scanning, but only if data is loaded
                     if(firebaseDataLoaded && !isAutoScanning) {
-                        toggleAutoScan();
+                        checkWifiStateAndScan();
                     }
                 } else {
                     Toast.makeText(getContext(), R.string.permissions_required, Toast.LENGTH_SHORT).show();
@@ -75,10 +83,13 @@ public class ScannerFragment extends Fragment {
         saveBtn = view.findViewById(R.id.saveBtn);
         logoutBtn = view.findViewById(R.id.logoutBtn);
         distanceMeter = view.findViewById(R.id.distanceMeter);
+        filterInput = view.findViewById(R.id.filterInput);
+        addFilterBtn = view.findViewById(R.id.addFilterBtn);
+        filterChipGroup = view.findViewById(R.id.filterChipGroup);
 
         wifiManager = (WifiManager) requireActivity().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
-        scanBtn.setOnClickListener(v -> toggleAutoScan());
+        scanBtn.setOnClickListener(v -> checkWifiStateAndScan());
         saveBtn.setOnClickListener(v -> saveCurrentLocation());
         logoutBtn.setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
@@ -90,9 +101,78 @@ public class ScannerFragment extends Fragment {
             }
         });
 
+        addFilterBtn.setOnClickListener(v -> {
+            String filterText = filterInput.getText().toString().trim();
+            if (!filterText.isEmpty() && !filters.contains(filterText)) {
+                filters.add(filterText);
+                updateFilterChips();
+                filterInput.setText("");
+            }
+        });
+
         initializeRoomData();
 
         return view;
+    }
+
+    private void checkWifiStateAndScan() {
+        if (!wifiManager.isWifiEnabled()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
+                startActivity(panelIntent);
+            } else {
+                wifiManager.setWifiEnabled(true);
+                Toast.makeText(getContext(), "Turning on Wi-Fi...", Toast.LENGTH_SHORT).show();
+                // Add a delay to allow Wi-Fi to enable before scanning
+                handler.postDelayed(this::toggleAutoScan, 2000);
+            }
+        } else {
+            toggleAutoScan();
+        }
+    }
+
+    private final BroadcastReceiver wifiStateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN);
+            if (wifiState == WifiManager.WIFI_STATE_DISABLED) {
+                if (isAutoScanning) {
+                    toggleAutoScan(); // Stop scanning if Wi-Fi is turned off
+                }
+            } else if (wifiState == WifiManager.WIFI_STATE_ENABLED && !isAutoScanning && firebaseDataLoaded) {
+                // If Wi-Fi is re-enabled, resume scanning if it was active before
+                checkWifiStateAndScan();
+            }
+        }
+    };
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        requireActivity().registerReceiver(wifiStateReceiver, new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION));
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        requireActivity().unregisterReceiver(wifiStateReceiver);
+        if (isAutoScanning) {
+            toggleAutoScan(); // Stop scanning when the app is paused
+        }
+    }
+
+    private void updateFilterChips() {
+        filterChipGroup.removeAllViews();
+        for (String filter : filters) {
+            Chip chip = (Chip) getLayoutInflater().inflate(R.layout.item_filter_chip, filterChipGroup, false);
+            chip.setText(filter);
+            chip.setCloseIconVisible(true);
+            chip.setOnCloseIconClickListener(v -> {
+                filters.remove(filter);
+                updateFilterChips();
+            });
+            filterChipGroup.addView(chip);
+        }
     }
 
     private void startWifiScan() {
@@ -101,6 +181,13 @@ public class ScannerFragment extends Fragment {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
+
+        if (!wifiManager.isWifiEnabled()) {
+            rawDebugData.setText("Wi-Fi is turned off. Please enable it to scan.");
+            if(isAutoScanning) toggleAutoScan();
+            return;
+        }
+
         wifiManager.startScan();
         List<ScanResult> results = wifiManager.getScanResults();
 
@@ -113,9 +200,25 @@ public class ScannerFragment extends Fragment {
         for (ScanResult network : results) {
             String ssid = network.SSID.isEmpty() ? getString(R.string.hidden_ssid) : network.SSID;
 
-            // Filter for SSIDs containing "sec" case-insensitively
-            if (!ssid.toLowerCase().contains("sec")) {
-                continue;
+            if (!filters.isEmpty()) {
+                boolean match = false;
+                for (String filter : filters) {
+                    try {
+                        if (ssid.matches(filter)) {
+                            match = true;
+                            break;
+                        }
+                    } catch (PatternSyntaxException e) {
+                        Log.e(TAG, "Invalid regex pattern: " + filter, e);
+                    }
+                }
+                if (!match) {
+                    continue;
+                }
+            } else {
+                if (!ssid.toLowerCase().contains("sec")) {
+                    continue;
+                }
             }
 
             sb.append(ssid).append(" | ").append(network.level).append("dBm\n");
@@ -154,7 +257,11 @@ public class ScannerFragment extends Fragment {
         updateUserLocation(detectedRoom);
 
         roomStatus.setText(getString(R.string.location_status, detectedRoom, proximityStatus));
-        rawDebugData.setText(sb.toString());
+        if (sb.length() == 0) {
+            rawDebugData.setText("No matching Wi-Fi networks found.");
+        } else {
+            rawDebugData.setText(sb.toString());
+        }
 
         if (currentStrongestRssi > -100) {
             int progress = 100 - Math.abs(currentStrongestRssi + 30);
@@ -186,27 +293,49 @@ public class ScannerFragment extends Fragment {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
+
+        if (!wifiManager.isWifiEnabled()) {
+            Toast.makeText(getContext(), "Wi-Fi is turned off. Please enable it to map.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         List<ScanResult> results = wifiManager.getScanResults();
         if (results.isEmpty()) {
             Toast.makeText(getContext(), "No WiFi networks found.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Filter for "sec" networks
-        List<ScanResult> secNetworks = new ArrayList<>();
-        for (ScanResult network : results) {
-            if (network.SSID != null && !network.SSID.isEmpty() && network.SSID.toLowerCase().contains("sec")) {
-                secNetworks.add(network);
+        List<ScanResult> filteredNetworks = new ArrayList<>();
+        if (!filters.isEmpty()) {
+            for (ScanResult network : results) {
+                if (network.SSID != null && !network.SSID.isEmpty()) {
+                    for (String filter : filters) {
+                        try {
+                            if (network.SSID.matches(filter)) {
+                                filteredNetworks.add(network);
+                                break;
+                            }
+                        } catch (PatternSyntaxException e) {
+                            Log.e(TAG, "Invalid regex pattern: " + filter, e);
+                        }
+                    }
+                }
+            }
+        } else {
+            for (ScanResult network : results) {
+                if (network.SSID != null && !network.SSID.isEmpty() && network.SSID.toLowerCase().contains("sec")) {
+                    filteredNetworks.add(network);
+                }
             }
         }
 
-        if (secNetworks.isEmpty()) {
-            Toast.makeText(getContext(), "No 'sec' network in range to map.", Toast.LENGTH_SHORT).show();
+        if (filteredNetworks.isEmpty()) {
+            Toast.makeText(getContext(), "No matching network in range to map.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        ScanResult strongest = secNetworks.get(0);
-        for (ScanResult r : secNetworks) {
+        ScanResult strongest = filteredNetworks.get(0);
+        for (ScanResult r : filteredNetworks) {
             if (r.level > strongest.level) {
                 strongest = r;
             }
@@ -243,7 +372,7 @@ public class ScannerFragment extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (!isAdded()) {
-                    return; // Fragment not attached to a context, so do nothing
+                    return;
                 }
                 mappings.clear();
                 for (DataSnapshot ds : snapshot.getChildren()) {
@@ -252,11 +381,10 @@ public class ScannerFragment extends Fragment {
                         mappings.put(ds.getKey(), mapping);
                     }
                 }
-                // CRITICAL FIX: Only trigger the first scan AFTER the initial data is loaded.
                 if (!firebaseDataLoaded) {
                     firebaseDataLoaded = true;
                     if (checkPermissions() && !isAutoScanning) {
-                        toggleAutoScan();
+                        checkWifiStateAndScan();
                     }
                 }
             }
@@ -282,12 +410,6 @@ public class ScannerFragment extends Fragment {
             return false;
         }
         return true;
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (isAutoScanning) toggleAutoScan();
     }
 
     @Override

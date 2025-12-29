@@ -52,22 +52,30 @@ public class FriendRequestsAdapter extends RecyclerView.Adapter<FriendRequestsAd
         String myUid = FirebaseAuth.getInstance().getUid();
         if (myUid == null) return;
 
-        // Create paths for the atomic update
-        String userAFriendPath = "users/" + requester.uid + "/friends/" + myUid;
-        String userBFriendPath = "users/" + myUid + "/friends/" + requester.uid;
-        String requestPath = "friend_requests/" + myUid + "/" + requester.uid;
+        // Paths for atomic update
+        String myFriendPath = "users/" + myUid + "/friends/" + requester.uid;
+        String theirFriendPath = "users/" + requester.uid + "/friends/" + myUid;
+        String requestFromMePath = "friendRequests/" + requester.uid + "/" + myUid; // Request I sent
+        String requestToMePath = "friendRequests/" + myUid + "/" + requester.uid;   // Request they sent
 
         Map<String, Object> childUpdates = new HashMap<>();
-        childUpdates.put(userAFriendPath, true);
-        childUpdates.put(userBFriendPath, true);
-        childUpdates.put(requestPath, null); // Use null to delete the request data
+        childUpdates.put(myFriendPath, true);
+        childUpdates.put(theirFriendPath, true);
+        childUpdates.put(requestFromMePath, null);
+        childUpdates.put(requestToMePath, null);
 
         FirebaseDatabase.getInstance(dbUrl).getReference().updateChildren(childUpdates).addOnCompleteListener(task -> {
             if(task.isSuccessful()) {
-                // The Fragment's listener will automatically update the UI.
+                // For instant feedback, update the UI here
+                int position = holder.getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION) {
+                    requesters.remove(position);
+                    notifyItemRemoved(position);
+                    notifyItemRangeChanged(position, requesters.size());
+                }
                 Toast.makeText(holder.itemView.getContext(), "Friend request accepted!", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(holder.itemView.getContext(), "Failed to accept request. Check logs for details.", Toast.LENGTH_LONG).show();
+                Toast.makeText(holder.itemView.getContext(), "Failed to accept request. Check logs.", Toast.LENGTH_LONG).show();
                 if (task.getException() != null) {
                     Log.e("FriendRequestsAdapter", "Failed to accept request", task.getException());
                 }
@@ -79,10 +87,16 @@ public class FriendRequestsAdapter extends RecyclerView.Adapter<FriendRequestsAd
         String myUid = FirebaseAuth.getInstance().getUid();
         if (myUid == null) return;
 
-        FirebaseDatabase.getInstance(dbUrl).getReference("friend_requests").child(myUid).child(requester.uid).removeValue()
+        FirebaseDatabase.getInstance(dbUrl).getReference("friendRequests").child(myUid).child(requester.uid).removeValue()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        // The Fragment's listener will automatically update the UI.
+                        // The Fragment's listener will eventually update, but we do it here for instant feedback
+                        int position = holder.getAdapterPosition();
+                        if (position != RecyclerView.NO_POSITION) {
+                            requesters.remove(position);
+                            notifyItemRemoved(position);
+                            notifyItemRangeChanged(position, requesters.size());
+                        }
                         Toast.makeText(holder.itemView.getContext(), "Friend request declined", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(holder.itemView.getContext(), "Failed to decline request. Check logs for details.", Toast.LENGTH_LONG).show();

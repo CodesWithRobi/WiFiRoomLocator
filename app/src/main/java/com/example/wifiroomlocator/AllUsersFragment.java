@@ -50,6 +50,12 @@ public class AllUsersFragment extends Fragment {
     }
 
     private void findUserByEmail(String email) {
+        String myEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+        if (email.equals(myEmail)) {
+            Toast.makeText(getContext(), "You cannot send a friend request to yourself.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         Query query = FirebaseDatabase.getInstance(dbUrl).getReference("users").orderByChild("email").equalTo(email);
         query.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -82,25 +88,57 @@ public class AllUsersFragment extends Fragment {
 
     private void sendFriendRequest(String recipientUid) {
         String senderUid = FirebaseAuth.getInstance().getUid();
-        if (senderUid == null || senderUid.equals(recipientUid)) {
+        if (senderUid == null) {
             return;
         }
 
-        // Create friend request
-        FirebaseDatabase.getInstance(dbUrl).getReference("friend_requests").child(recipientUid).child(senderUid).setValue(true);
+        // Check if they are already friends
+        FirebaseDatabase.getInstance(dbUrl).getReference("users").child(senderUid).child("friends").child(recipientUid)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot friendshipSnapshot) {
+                        if (friendshipSnapshot.exists()) {
+                            Toast.makeText(getContext(), "You are already friends.", Toast.LENGTH_SHORT).show();
+                        } else {
+                            // Check if a request has already been sent
+                            FirebaseDatabase.getInstance(dbUrl).getReference("friendRequests").child(recipientUid).child(senderUid)
+                                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                                        @Override
+                                        public void onDataChange(@NonNull DataSnapshot requestSnapshot) {
+                                            if (requestSnapshot.exists()) {
+                                                Toast.makeText(getContext(), "Friend request already sent.", Toast.LENGTH_SHORT).show();
+                                            } else {
+                                                // Neither friends nor pending request, so send it
+                                                FirebaseDatabase.getInstance(dbUrl).getReference("friendRequests").child(recipientUid).child(senderUid).setValue(true);
 
-        // Update UI to show pending status
-        sendRequestButton.setImageResource(R.drawable.ic_clock);
-        sendRequestButton.setEnabled(false);
-        emailSearchEditText.setEnabled(false);
+                                                // Update UI to show pending status
+                                                sendRequestButton.setImageResource(R.drawable.ic_clock);
+                                                sendRequestButton.setEnabled(false);
+                                                emailSearchEditText.setEnabled(false);
 
-        new Handler().postDelayed(() -> {
-            if (isAdded()) {
-                sendRequestButton.setImageResource(R.drawable.ic_add);
-                sendRequestButton.setEnabled(true);
-                emailSearchEditText.setEnabled(true);
-                emailSearchEditText.setText("");
-            }
-        }, 3000); // Revert after 3 seconds
+                                                new Handler().postDelayed(() -> {
+                                                    if (isAdded()) {
+                                                        sendRequestButton.setImageResource(R.drawable.ic_add);
+                                                        sendRequestButton.setEnabled(true);
+                                                        emailSearchEditText.setEnabled(true);
+                                                        emailSearchEditText.setText("");
+                                                    }
+                                                }, 3000); // Revert after 3 seconds
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onCancelled(@NonNull DatabaseError error) {
+                                            Log.e(TAG, "Failed to check friend request status: " + error.getMessage());
+                                        }
+                                    });
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Failed to check friendship status: " + error.getMessage());
+                    }
+                });
     }
 }
