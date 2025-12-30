@@ -1,6 +1,7 @@
 package com.example.wifiroomlocator;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,6 +36,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ScannerFragment extends Fragment {
 
@@ -51,7 +54,15 @@ public class ScannerFragment extends Fragment {
     private final ActivityResultLauncher<String[]> requestPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestMultiplePermissions(),
             permissions -> {
-                if (permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) && permissions.getOrDefault(Manifest.permission.POST_NOTIFICATIONS, false)) {
+                boolean allGranted = true;
+                for (boolean isGranted : permissions.values()) {
+                    if (!isGranted) {
+                        allGranted = false;
+                        break;
+                    }
+                }
+
+                if (allGranted) {
                     checkWifiStateAndStartService();
                 } else {
                     Toast.makeText(getContext(), R.string.permissions_required, Toast.LENGTH_SHORT).show();
@@ -61,12 +72,21 @@ public class ScannerFragment extends Fragment {
     private final BroadcastReceiver scanResultsReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (WifiScanningService.ACTION_SCAN_RESULT.equals(intent.getAction())) {
-                roomStatus.setText(intent.getStringExtra(WifiScanningService.EXTRA_ROOM_STATUS));
-                rawDebugData.setText(intent.getStringExtra(WifiScanningService.EXTRA_RAW_DEBUG_DATA));
-                distanceMeter.setProgress(intent.getIntExtra(WifiScanningService.EXTRA_DISTANCE_METER, 0));
-                strongestBssid = intent.getStringExtra(WifiScanningService.EXTRA_STRONGEST_BSSID);
-                strongestRssi = intent.getIntExtra(WifiScanningService.EXTRA_STRONGEST_RSSI, -100);
+            String action = intent.getAction();
+            if (action == null) return;
+
+            switch (action) {
+                case WifiScanningService.ACTION_SCAN_RESULT:
+                    roomStatus.setText(intent.getStringExtra(WifiScanningService.EXTRA_ROOM_STATUS));
+                    rawDebugData.setText(intent.getStringExtra(WifiScanningService.EXTRA_RAW_DEBUG_DATA));
+                    distanceMeter.setProgress(intent.getIntExtra(WifiScanningService.EXTRA_DISTANCE_METER, 0));
+                    strongestBssid = intent.getStringExtra(WifiScanningService.EXTRA_STRONGEST_BSSID);
+                    strongestRssi = intent.getIntExtra(WifiScanningService.EXTRA_STRONGEST_RSSI, -100);
+                    break;
+                case WifiScanningService.ACTION_SERVICE_STOPPED:
+                    isServiceRunning = false;
+                    scanBtn.setText("Start Scanning");
+                    break;
             }
         }
     };
@@ -113,8 +133,15 @@ public class ScannerFragment extends Fragment {
                 filters.add(filterText);
                 updateFilterChips();
                 filterInput.setText("");
+                if (isServiceRunning) {
+                    restartScanningService();
+                }
             }
         });
+
+        if (!isServiceRunning) {
+            checkWifiStateAndStartService();
+        }
 
         return view;
     }
@@ -122,7 +149,13 @@ public class ScannerFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(scanResultsReceiver, new IntentFilter(WifiScanningService.ACTION_SCAN_RESULT));
+        isServiceRunning = isMyServiceRunning(WifiScanningService.class);
+        scanBtn.setText(isServiceRunning ? "Stop Scanning" : "Start Scanning");
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(WifiScanningService.ACTION_SCAN_RESULT);
+        filter.addAction(WifiScanningService.ACTION_SERVICE_STOPPED);
+        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(scanResultsReceiver, filter);
     }
 
     @Override
@@ -162,6 +195,12 @@ public class ScannerFragment extends Fragment {
         scanBtn.setText("Start Scanning");
     }
 
+    private void restartScanningService() {
+        stopScanningService();
+        // Give the service time to fully stop before restarting
+        new Handler().postDelayed(this::startScanningService, 500);
+    }
+
     private void updateFilterChips() {
         filterChipGroup.removeAllViews();
         for (String filter : filters) {
@@ -171,6 +210,9 @@ public class ScannerFragment extends Fragment {
             chip.setOnCloseIconClickListener(v -> {
                 filters.remove(filter);
                 updateFilterChips();
+                if (isServiceRunning) {
+                    restartScanningService();
+                }
             });
             filterChipGroup.addView(chip);
         }
@@ -201,19 +243,30 @@ public class ScannerFragment extends Fragment {
     }
 
     private boolean checkPermissions() {
+        List<String> permissionsToRequest = new ArrayList<>();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionLauncher.launch(new String[]{
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.POST_NOTIFICATIONS
-                });
-                return false;
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS);
             }
-        } else if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissionLauncher.launch(new String[]{Manifest.permission.ACCESS_FINE_LOCATION});
+        }
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+
+        if (!permissionsToRequest.isEmpty()) {
+            requestPermissionLauncher.launch(permissionsToRequest.toArray(new String[0]));
             return false;
         }
         return true;
+    }
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) requireActivity().getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

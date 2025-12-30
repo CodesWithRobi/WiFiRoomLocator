@@ -17,7 +17,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -41,6 +40,7 @@ public class WifiScanningService extends Service {
     private static final String TAG = "WifiScanningService";
     public static final String ACTION_STOP_SERVICE = "com.example.wifiroomlocator.STOP_SERVICE";
     public static final String ACTION_SCAN_RESULT = "com.example.wifiroomlocator.SCAN_RESULT";
+    public static final String ACTION_SERVICE_STOPPED = "com.example.wifiroomlocator.SERVICE_STOPPED";
     public static final String EXTRA_ROOM_STATUS = "com.example.wifiroomlocator.EXTRA_ROOM_STATUS";
     public static final String EXTRA_RAW_DEBUG_DATA = "com.example.wifiroomlocator.EXTRA_RAW_DEBUG_DATA";
     public static final String EXTRA_DISTANCE_METER = "com.example.wifiroomlocator.EXTRA_DISTANCE_METER";
@@ -48,7 +48,7 @@ public class WifiScanningService extends Service {
     public static final String EXTRA_STRONGEST_RSSI = "com.example.wifiroomlocator.EXTRA_STRONGEST_RSSI";
 
     private static final String CHANNEL_ID = "WifiScanningServiceChannel";
-    private static final int SCAN_DELAY_MS = 4000;
+    private static final int SCAN_DELAY_MS = 30000;
 
     private WifiManager wifiManager;
     private final Handler handler = new Handler();
@@ -78,9 +78,12 @@ public class WifiScanningService extends Service {
         wifiScanReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context c, Intent intent) {
-                if (WifiManager.SCAN_RESULTS_AVAILABLE_ACTION.equals(intent.getAction())) {
-                    processScanResults();
-                }
+                processScanResults();
+                // if (WifiManager.SCAN_RESULTS_AVAILABLE_ACTION.equals(intent.getAction())) {
+                //     boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
+                //     if (success) {
+                //     }
+                // }
             }
         };
         ContextCompat.registerReceiver(this, wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
@@ -94,7 +97,7 @@ public class WifiScanningService extends Service {
             filters = intent.getStringArrayListExtra("filters");
         }
 
-        startForeground(1, createNotification("Scanning for location..."));
+        startForeground(1, createNotification("Searching for a known location..."));
         startScanning();
 
         return START_STICKY;
@@ -106,6 +109,7 @@ public class WifiScanningService extends Service {
         stopScanning();
         unregisterReceiver(stopServiceReceiver);
         unregisterReceiver(wifiScanReceiver);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent(ACTION_SERVICE_STOPPED));
     }
 
     @Override
@@ -163,6 +167,7 @@ public class WifiScanningService extends Service {
         public void run() {
             if (isScanning) {
                 wifiManager.startScan();
+                handler.postDelayed(this, SCAN_DELAY_MS);
             }
         }
     };
@@ -171,12 +176,11 @@ public class WifiScanningService extends Service {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
-        Toast.makeText(this, "Scan finished.", Toast.LENGTH_SHORT).show();
         List<ScanResult> results = wifiManager.getScanResults();
 
         StringBuilder sb = new StringBuilder();
         String detectedRoom = "Unknown Area";
-        String proximityStatus = "Scanning";
+        String proximityStatus = "Searching for a known location...";
         ScanResult strongestMappedNetwork = null;
         ScanResult strongestOverallNetwork = null;
 
@@ -207,17 +211,20 @@ public class WifiScanningService extends Service {
             }
         }
 
+        String roomStatusText;
         if (strongestMappedNetwork != null) {
             detectedRoom = mappings.get(strongestMappedNetwork.BSSID.replace(":", "")).name;
             int offset = Math.abs(strongestMappedNetwork.level - mappings.get(strongestMappedNetwork.BSSID.replace(":", "")).rssi);
-            if (offset <= 6) proximityStatus = "At Center";
-            else if (offset <= 15) proximityStatus = "Near";
-            else proximityStatus = "Far Away";
+            if (offset <= 6) proximityStatus = "You are at the center of " + detectedRoom;
+            else if (offset <= 15) proximityStatus = "You are near " + detectedRoom;
+            else proximityStatus = "You are far from " + detectedRoom;
+            roomStatusText = proximityStatus;
+        } else {
+            roomStatusText = "Searching for a known location...";
         }
 
         updateUserLocation(detectedRoom);
 
-        String roomStatusText = "LOC: " + detectedRoom + " | STATUS: " + proximityStatus;
         int distanceMeterValue = (strongestMappedNetwork != null) ? Math.max(0, Math.min(100, 100 - Math.abs(strongestMappedNetwork.level + 30))) : 0;
 
         Intent intent = new Intent(ACTION_SCAN_RESULT);
@@ -232,11 +239,6 @@ public class WifiScanningService extends Service {
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
         updateNotification(roomStatusText);
-
-        // Schedule the next scan after processing results
-        if (isScanning) {
-            handler.postDelayed(scanRunnable, SCAN_DELAY_MS);
-        }
     }
 
     private void updateUserLocation(String location) {
