@@ -74,16 +74,16 @@ The application relies on a client-server architecture with the Android app as t
 
 #### Output 1 - Real-Time Scanning and Location Detection
 
-![Home](https://github.com/user-attachments/assets/ae8f5e6f-3f55-4ede-9fed-48ced618dcc1)
-
+<img width="610" alt="HOME" src="https://github.com/user-attachments/assets/dde9885b-a554-4db0-8fb9-31f6ac3bfb3f" />
 
 #### Output 2 - Live Friends List with Locations
 
-<img width="510" height="316" alt="image" src="https://github.com/user-attachments/assets/f85ef7a9-deea-4d0e-b321-f34b79331bd8" />
+<img width="610" alt="Friends" src="https://github.com/user-attachments/assets/802c18c9-1fcd-424c-baab-3c9e27bdb356" />
 
 #### Output 3 - Finding and Adding New Friends
 
-<img width="410" height="350" alt="image" src="https://github.com/user-attachments/assets/88621d1e-163b-4b1e-b20b-9d0c9b9931e6" />
+<img width="610" alt="Discover" src="https://github.com/user-attachments/assets/978d7795-4290-4b33-b921-f33612a677ef" />
+<img width="610" alt="Requests" src="https://github.com/user-attachments/assets/3d03506d-5df0-4903-823d-487547ebbc73" />
 
 ## Results and Impact
 
